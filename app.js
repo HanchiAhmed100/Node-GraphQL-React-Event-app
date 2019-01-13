@@ -5,20 +5,21 @@ let express = require('express')
 let bodyParser = require('body-parser')
 let graphqlHttp = require('express-graphql')
 let { buildSchema } = require('graphql')
-
+let mongoose = require('mongoose')
 let app = express()
+
+
+
+
 
 /*******************************
     Middelwares
 ********************************/
 app.use(bodyParser.json())
+const Event = require('./models/event')
 
 
 
-const events = [
-
-
-];
 
 
 /************************************************************
@@ -48,22 +49,24 @@ const events = [
 
     input : type used to define a list of specific type
 *************************************************************/
-app.use('/graphql',graphqlHttp({
-    schema : buildSchema(`
+app.use('/graphql', graphqlHttp({
+    schema: buildSchema(`
 
         type Event {
             _id: ID!
             title : String!
             description : String!
             price : Float!
+            number : Int!
             date : String!
         }
 
 
         input EventInput{
             title : String! 
-            descripton : String!
+            description : String!
             price : Float!
+            number : Int!
             date : String!
         }
 
@@ -80,31 +83,48 @@ app.use('/graphql',graphqlHttp({
             mutation : RootMutation
         }
     `),
-    rootValue : {
-        events : () => {
-            return events
+    rootValue: {
+        events: () => {
+            return Event.find().then(events => {
+                return events.map(event => {
+                    return {...event._doc, _id: event.id }
+                })
+            }).catch(err => {
+                console.log(err)
+            })
         },
-        createEvent : (args) => {
-            const event = {
-                _id : Math.random().toString(),
-                title : args.title,
-                description : args.description,
-                price : +args.price,
-                date : new Date().toISOString()
-            }
-            events.push(event)
+        createEvent: (args) => {
+            const event = new Event({
+                title: args.EventInput.title,
+                description: args.EventInput.description,
+                price: +args.EventInput.price,
+                number: +args.EventInput.number,
+                date: new Date(args.EventInput.date)
+            })
+            return event
+                .save()
+                .then(result => {
+                    console.log(result)
+                    return {...result._doc, _id: result._doc._id.toString() }
+                })
+                .catch(err => {
+                    console.log(err)
+                    throw err
+                })
         }
     },
-    graphiql : true
+    graphiql: true
 }))
 
 
-
-
-
 /*******************************
-    setting up the port
+    setting up the port and the connection to the mongo data base
 ********************************/
-app.listen(3000,function(){
-    console.log('server running on port : 3000')
-})
+mongoose.connect(`mongodb+srv://ahmed:azerty@cluster0-hxo3u.mongodb.net/event-app?retryWrites=true`).then(() => {
+        app.listen(3000, function() {
+            console.log('server running on port : 3000')
+        })
+    })
+    .catch(err => {
+        console.log(err)
+    })
