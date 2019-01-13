@@ -84,6 +84,9 @@ app.use('/graphql', graphqlHttp({
         }
     `),
     rootValue: {
+        /**************************************************
+         *  Method to get all event from the DataBase 
+         ***************************************************/
         events: () => {
             return Event.find().then(events => {
                 return events.map(event => {
@@ -93,7 +96,14 @@ app.use('/graphql', graphqlHttp({
                 console.log(err)
             })
         },
+        /**************************************************
+         *   Method for adding an event
+         ***************************************************/
+
         createEvent: (args) => {
+            /**************************************************
+             *   Mapping the agrs to new Event Model
+             ***************************************************/
             const event = new Event({
                 title: args.EventInput.title,
                 description: args.EventInput.description,
@@ -101,6 +111,10 @@ app.use('/graphql', graphqlHttp({
                 number: +args.EventInput.number,
                 date: new Date(args.EventInput.date)
             })
+
+            /**************************************************
+             *   Inserting the event 
+             ***************************************************/
             return event
                 .save()
                 .then(result => {
@@ -113,13 +127,17 @@ app.use('/graphql', graphqlHttp({
                 })
         }
     },
+    /************************************************
+     *   setting the graphQL tool interface to true 
+     *************************************************/
     graphiql: true
+
 }))
 
 
-/*******************************
-    setting up the port and the connection to the mongo data base
-********************************/
+/*****************************************************************
+ *  setting up the port and the connection to the mongo data base
+ ******************************************************************/
 mongoose.connect(`mongodb+srv://ahmed:azerty@cluster0-hxo3u.mongodb.net/event-app?retryWrites=true`).then(() => {
         app.listen(3000, function() {
             console.log('server running on port : 3000')
